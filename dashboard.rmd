@@ -1,0 +1,89 @@
+title: "Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#install.packages("reshape2")
+#install.packages("randomForest")
+library(tidyverse)
+library(reshape2)
+
+housing= read.csv('housing.csv')
+head(housing)
+summary(housing)
+
+```{r echo = FALSE}
+#scatterplot showing total rooms v total bedrooms
+table<-table(housing$total_rooms)
+plot(
+  x=housing$total_rooms,
+  y=housing$total_bedrooms,
+  main="Total Rooms vs Total Bedrooms",
+  xlab="All Rooms",
+  ylab="Bedrooms"
+)
+```
+#How many homes are NEAR BAY, LESS THAN 1HR OCEAN, INLAND, NEAR OCEAN, and ISLAND
+
+par(mfrow=c(2,5))
+colnames(housing)
+
+library(ggplot2)
+ggplot(data = melt(housing), mapping = aes(x = value)) + 
+  geom_histogram(bins = 30) + facet_wrap(~variable, scales = 'free_x')
+
+#impute missing values
+housing$total_bedrooms[is.na(housing$total_bedrooms)] = median(housing$total_bedrooms , na.rm = TRUE)
+
+#fix total columns - make them means
+housing$mean_bedrooms = housing$total_bedrooms/housing$households
+housing$mean_rooms = housing$total_rooms/housing$households
+drops = c('total_bedrooms', 'total_rooms')
+housing = housing[ , !(names(housing) %in% drops)]
+
+head(housing)
+
+#Get a list of all the categories in the 'ocean_proximity' column
+#Make a new empty dataframe of all 0s, where each category is its own colum
+#Use a for loop to populate the appropriate columns of the dataframe
+#Drop the original column from the dataframe.
+categories = unique(housing$ocean_proximity)
+#split the categories off
+cat_housing = data.frame(ocean_proximity = housing$ocean_proximity)
+for(cat in categories){
+  cat_housing[,cat] = rep(0, times= nrow(cat_housing))
+}
+
+for(i in 1:length(cat_housing$ocean_proximity)){
+  cat = as.character(cat_housing$ocean_proximity[i])
+  cat_housing[,cat][i] = 1
+}
+
+head(cat_housing)
+cat_columns = names(cat_housing)
+keep_columns = cat_columns[cat_columns != 'ocean_proximity']
+cat_housing = select(cat_housing,one_of(keep_columns))
+head(cat_columns)
+
+```{r echo = FALSE}
+#table containing NEAR BAY, <1 HR OCEAN, INLAND, NEAR OCEAN, and ISLAND data
+table<-table(housing$cat_housing)
+
+```
+
+```{r echo = FALSE}
+#scatterplot showing population v households
+table<-table(housing$population)
+plot(
+  x=housing$population,
+  y=housing$households,
+  main="Housing by Household",
+  xlab="Population",
+  ylab="Households"
+)
+```
+
+
+
